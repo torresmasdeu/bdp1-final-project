@@ -35,3 +35,58 @@ paste
 PS1="\[\033[01;32m\]\u@<prompt_name>\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "
 ```
 to have nicer bash prompt
+
+
+
+
+add volume
+```
+fdisk -l
+mount -t ext4 /dev/xvdf1 /project_data/
+
+vi /etc/fstab
+mount -a
+```
+
+in /etc/fstab write
+```
+/dev/xvdf1	/project_data	ext4 defaults 0 0
+```
+
+NFS SERVER
+IMPORTANT: add master private IP to inbound rules
+
+in the master:
+```
+yum install nfs-utils rpcbind
+systemctl enable nfs-server
+systemctl enable rpcbind
+systemctl enable nfs-lock
+systemctl enable nfs-idmap
+systemctl start rpcbind
+systemctl start nfs-server
+systemctl start nfs-lock
+systemctl start nfs-idmap
+systemctl status nfs
+
+vi /etc/exports
+```
+
+inside /etc/exports
+```
+/project_data <WORKER1_PRIVATE_IP>(rw,sync,no_wdelay)
+/project_data <WORKER2_PRIVATE_IP>(rw,sync,no_wdelay)
+```
+
+in workers:
+
+```
+yum install nfs-utils
+mkdir /project_data
+vi /etc/fstab
+```
+
+inside \etc\fstab
+```
+<MASTER_PRIVATE_IP>:/project_data /project_data   nfs defaults        0 0
+```
