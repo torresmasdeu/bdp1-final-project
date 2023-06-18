@@ -102,3 +102,58 @@ mount the changes:
 ```
 mount -a
 ```
+## HT condor
+First on the master
+INSTALL DEPENDENCIES
+```
+yum install wget -y 
+wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+yum localinstall epel-release-latest-7.noarch.rpm -y
+yum clean all
+```
+INSTALL CONDOR REPOs and PACKAGES
+```
+wget http://research.cs.wisc.edu/htcondor/yum/repo.d/htcondor-stable-rhel7.repo
+cp htcondor-stable-rhel7.repo /etc/yum.repos.d/
+yum install condor-all -y
+```
+CONDOR BASIC CONFIGURATION
+```
+cd
+vi /etc/condor/condor_config
+```
+GUIDELINES FOR THE CONDOR_CONFIG FILE
+#-------------------------------------
+#In the config file add at the end
+#the most important variable is the CONDOR_HOST running the master
+#ADD the following lines to your condor_config file
+
+#CHANGE THE FOLLOWING IP TO YOUR MASTER IP
+CONDOR_HOST = master Private IP address
+ 
+#on the master
+DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, STARTD, SCHEDD
+ 
+#on the nodes
+DAEMON_LIST = MASTER, STARTD 
+
+#on both
+HOSTALLOW_READ = *
+HOSTALLOW_WRITE = *
+HOSTALLOW_ADMINISTRATOR = *
+#-------------------------------------
+
+Security Group must allow tcp for ports 0 - 65535 from the same security group, i.e.:
+ All TCP    TCP      0 - 65535     sg-008742ba0467986fe (aws_condor)
+Security group must allow ping from the same security group, i.e.:
+ All    ICMP-IPv4   All    N/A     sg-008742ba0467986fe (aws_condor)
+Security group must allow ssh on port 22 from everywhere as ususal
+
+Once edited the condor_config file you can proceed with the following commands in both master and nodes
+```
+systemctl status condor
+systemctl start condor
+systemctl enable condor
+systemctl status condor
+ps -aux | grep condor
+```
