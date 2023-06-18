@@ -1,26 +1,21 @@
 ## 1. Build a cloud computing infrastructure 
-We want to create two geographically distributed computing sites, composed by at least 2 nodes each: one master and at least one worker. To do that, click on the "Launch instance" button in the instance page of EC2 AWS. From this page, create the VMs.
+We want to create two geographically distributed computing sites, composed by at least 2 nodes each: one master and at least one worker. In this case, we will create 2 sites: 
+- Site 1, with 3 nodes: 1 master (`S1_M`) and 2 workers (`S1_W1` and `S1_W2`)
+- Site 2, with 2 nodes: 1 master (`S2_M`) and 1 worker (`S2_W1`)
 
-Give a proper name to the istances (master site1 - worker site1 - master site2 - worker site2)
+Each site was created using a different AWS account.
 
-Select the Red Hat distribution RHEL-7.9 or another open source Linux distribution; we decided to use the RHEL-7.9_HVM-20221027-x86_64-0-Hourly2-GP2 version, published on the 2022-10-27. 
+### 1.1. Create the nodes
+To create each node, click on the "Launch instance" button in the instance page of EC2 AWS.
 
-Select a tipe of instance for each node: we selected t2-large (2 CPU, 8 GB RAM) for all.
-
-Create a new key pair (e.g BDP1_project). You will do this just once and save the .pem document. When you create a second instance you have to select this pair of keys. 
-
-To simulate the geographical sepration, select two differend subnets in the netwrok settings. For example, we selected:
-site 1: us-east 1a
-site 2: us-east 1c
-
-You have to create a security group for each site (create it for master, select existing for workers)
-site1 sec group: site1-security
-site2 sec group: site2-security
-
-Modify inbound security groups rules so that only you can access the sites: 
-remove default (open to all, 0.0.0.0/0) and restricted to the current IP address:
-```Security group rule 1 (TCP, 22, <your_IP>/32, SSH for my IP address)```
-
+1. Give a proper name to the istances (`site1_master`, `site1_worker1`, `site1_worker2`, `site2_master`, `site2_worker1`)
+2. Select the Red Hat distribution RHEL-7.9 or another open source Linux distribution: we decided to use the `RHEL-7.9_HVM-20221027-x86_64-0-Hourly2-GP2` version, published on the 2022-10-27.
+3. Select a tipe of instance for each node: we selected `t2-large` (2 CPU, 8 GB RAM) for all.
+4. Create a new key pair (eg:`BDP1_project`). This is done only once, when creating the first instance of each site. Save the key (`.pem`) document to directory (from which you will need to initialise all the instances from this directory, or change the key file directory from the initialisation command). In the other instances, select the previously created key pair.
+5. To simulate the geographical sepration, select two differend subnets in the netwrok settings. For example, we selected for site 1 `us-east 1a` and for Site 2 `us-east 1c`.
+6. Create a security group for each site (create it for master, select existing for workers). For example, we created for site 1 `ite1-security` and for site 2 `site2-security`.
+7. Modify inbound security groups rules so that only you can access the sites: we removed the default (open to all, 0.0.0.0/0) and restricted to the current IP address: ```Security group rule 1 (TCP, 22, <your_IP>/32, SSH for my IP address)```
+8. (Optional) Select 
 You can select different size storage, default being 10 gb. We selected 30 gp2 for site2, site1 default)
 
 all other things default. create instances
@@ -158,3 +153,101 @@ systemctl enable condor
 systemctl status condor
 ps -aux | grep condor
 ```
+
+## WebDav
+
+on the server: 
+```
+#enable the epel repository as done for condor, you should see have this file:
+cat /etc/yum.repos.d/epel.repo
+
+####
+
+#Install Apache using YUM:
+yum install httpd
+
+#Disable Apache's default welcome page:
+sed -i 's/^/#&/g' /etc/httpd/conf.d/welcome.conf
+
+#Prevent the Apache web server from displaying files within the web directory:
+sed -i "s/Options Indexes FollowSymLinks/Options FollowSymLinks/" /etc/httpd/conf/httpd.conf
+
+#Start the service 
+systemctl start httpd.service
+
+httpd -M | grep dav
+
+#You should see as output something like
+#   dav_module (shared)
+#   dav_fs_module (shared)
+#   dav_lock_module (shared)
+
+mkdir /var/www/html/webdav
+chown -R apache:apache /var/www/html
+chmod -R 755 /var/www/html
+
+#you need to create a user account, say it is "user001", to access the WebDAV server, and then input your desired password. 
+#Later, you will use this user account to log into your WebDAV server.
+
+htpasswd -c /etc/httpd/.htpasswd bdp1_project
+chown root:apache /etc/httpd/.htpasswd
+chmod 640 /etc/httpd/.htpasswd
+
+#Create a virtual host for WebDAV
+
+vim /etc/httpd/conf.d/webdav.conf
+
+#Populate it with the following content
+
+DavLockDB /var/www/html/DavLock
+<VirtualHost *:80>
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/html/webdav/
+    ErrorLog /var/log/httpd/error.log
+    CustomLog /var/log/httpd/access.log combined
+    Alias /webdav /var/www/html/webdav
+    <Directory /var/www/html/webdav>
+        DAV On
+        AuthType Basic
+        AuthName "webdav"
+        AuthUserFile /etc/httpd/.htpasswd
+        Require valid-user
+    </Directory>
+</VirtualHost>
+#####################################################
+
+#disable selinux if enabled
+setenforce 0
+# to have this permanently disabled: https://linuxize.com/post/how-to-disable-selinux-on-centos-7/
+
+systemctl restart httpd.service
+```
+
+IMPORTANT: add an inbound rule for port 80 of the **public** client IP to be able to establish a connection
+
+on the client:
+IMPORTANT: PUBLIC server IP
+```
+# On the Client
+
+yum install cadaver
+cadaver http://<public-server-ip>/webdav/
+          username: bdp1
+          password: <your_password>
+```
+
+on the server: 
+SERVER: private server IP
+```
+yum install cadaver
+cadaver http://<private-server-ip>/webdav/
+          username: bdp1
+          password: <your_password>
+```
+
+to upload files (inside `dav:/webdav/>`): 
+`put <path/filename>`: will upload such file to WebDav
+
+to download:
+`get <filename>`: will download such file to current directory (outside WebDav)
+
