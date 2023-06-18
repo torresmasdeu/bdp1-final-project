@@ -47,8 +47,9 @@ mount -t ext4 /dev/xvdf1 /project_data/
 
 vi /etc/fstab
 mount -a
+chmod 775 /<directory>/
 ```
-
+775 give us the right to read write and execute in the master but only to read and execute in the workers (put 777 to also write)
 in /etc/fstab write
 ```
 /dev/xvdf1	/project_data	ext4 defaults 0 0
