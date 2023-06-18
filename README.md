@@ -80,6 +80,11 @@ inside /etc/exports
 /project_data <WORKER2_PRIVATE_IP>(rw,sync,no_wdelay)
 ```
 
+finally, export changes:
+```
+exportfs -r
+```
+
 in workers:
 
 ```
