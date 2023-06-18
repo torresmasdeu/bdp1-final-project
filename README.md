@@ -34,13 +34,14 @@ paste
 ```
 PS1="\[\033[01;32m\]\u@<prompt_name>\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "
 ```
-to have nicer bash prompt
+to have nicer bash prompt (both in normal and root)
 
 
 
 
-add volume
+add volume in root
 ```
+sudo su -
 fdisk -l
 mount -t ext4 /dev/xvdf1 /project_data/
 
@@ -54,9 +55,10 @@ in /etc/fstab write
 ```
 
 NFS SERVER
-IMPORTANT: add master private IP to inbound rules
 
-in the master:
+IMPORTANT: add master, worker1 and worker2 private IPs to inbound rules
+
+in the master (still in root):
 ```
 yum install nfs-utils rpcbind
 systemctl enable nfs-server
@@ -81,6 +83,7 @@ inside /etc/exports
 in workers:
 
 ```
+sudo su -
 yum install nfs-utils
 mkdir /project_data
 vi /etc/fstab
@@ -89,4 +92,8 @@ vi /etc/fstab
 inside \etc\fstab
 ```
 <MASTER_PRIVATE_IP>:/project_data /project_data   nfs defaults        0 0
+```
+mount the changes:
+```
+mount -a
 ```
