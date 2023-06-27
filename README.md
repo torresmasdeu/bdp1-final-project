@@ -232,7 +232,7 @@ IMPORTANT: PUBLIC server IP
 
 yum install cadaver
 cadaver http://<public-server-ip>/webdav/
-          username: bdp1
+          username: f
           password: <your_password>
 ```
 
@@ -251,3 +251,69 @@ to upload files (inside `dav:/webdav/>`):
 to download:
 `get <filename>`: will download such file to current directory (outside WebDav)
 
+
+## docker
+become root: `sudo su -`
+
+#######################################
+####### INSTALL DOCKER on a RHEL7.6 VM 
+#######################################
+#install vim and wget
+yum install vim wget
+
+#install the docker repo
+vim /etc/yum.repos.d/docker-ce.repo
+#####################################################
+##########   Add the following content in the docker-ce-repo file:
+
+[docker-ce-stable]
+name=Docker CE Stable - x86_64
+baseurl=https://download.docker.com/linux/centos/7/x86_64/stable
+enabled=1
+gpgcheck=1
+gpgkey=https://download.docker.com/linux/centos/gpg
+
+[centos-extras]
+name=Centos extras - x86_64
+baseurl=http://mirror.centos.org/centos/7/extras/x86_64
+enabled=1
+gpgcheck=0
+#############################################################
+
+#install the epel repo
+wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+yum localinstall epel-release-latest-7.noarch.rpm
+
+#install dependencies (maybe more will be needed, check for errors)
+yum install yum-utils device-mapper-persistent-data lvm2
+yum install container-selinux -y
+
+# install docker
+yum install docker-ce docker-ce-cli containerd.io -y
+
+#start docker
+systemctl status docker
+systemctl start docker
+systemctl status docker
+systemctl enable docker
+
+usermod -g docker ec2-user #to access docker from ec2-user DOCKERBUILD DUDNT WORK
+
+exit #go back to user
+
+mkdir docker
+cd docker/
+vim Dockerfile
+
+######dockerfile
+FROM ubuntu
+RUN apt update
+RUN apt-get install -y python3
+
+COPY /home/ec2-user/docker/align.py align.py
+COPY /home/ec2-user/docker/bwa bwa
+#########
+
+cp ../proj_100/bwa ../proj_100/align.py .
+
+docker build -t bwa_align . (in root)
