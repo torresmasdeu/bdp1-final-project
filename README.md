@@ -122,20 +122,27 @@ GUIDELINES FOR THE CONDOR_CONFIG FILE
 #-------------------------------------
 #In the config file add at the end
 #the most important variable is the CONDOR_HOST running the master
+
 #ADD the following lines to your condor_config file
 
 #CHANGE THE FOLLOWING IP TO YOUR MASTER IP
+
 CONDOR_HOST = master Private IP address
  
 #on the master
+
 DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, STARTD, SCHEDD
  
 #on the nodes
+
 DAEMON_LIST = MASTER, STARTD 
 
 #on both
+
 HOSTALLOW_READ = *
+
 HOSTALLOW_WRITE = *
+
 HOSTALLOW_ADMINISTRATOR = *
 #-------------------------------------
 
