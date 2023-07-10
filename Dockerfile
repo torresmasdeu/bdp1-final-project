@@ -1,7 +1,11 @@
-FROM ubuntu 
+FROM ubuntu:latest
 
-RUN apt update 
+RUN apt-get update
 RUN apt-get install -y python3
+ 
+COPY align.py /
+COPY bwa /
 
-COPY /home/ec2-user/docker/align.py align.py 
-COPY /home/ec2-user/docker/bwa bwa
+WORKDIR /
+
+ENTRYPOINT ["/bin/python3", "align.py"]
