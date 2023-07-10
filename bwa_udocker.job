@@ -1,0 +1,39 @@
+########### The program that will be executed #######
+
+Executable = ./udocker
+n = $(Process)+1
+
+############ Input Sandbox  #########################
+
+#Input      = read_$INT(n).fa  
+#Can contain standard input
+
+transfer_input_files = align.py, bwa, read_$INT(n).fa
+
+## Arguments that will be passed to the executable ##
+
+Arguments  = run bwa_udocker -v /project_data/BDP1_2023/hg19/:/project_data/BDP1_2023/hg19/ -v $(PWD):/workdir read_$INT(n).fa
+
+###### Output Sandbox ###############################
+
+Log        = read_$INT(n).log    
+# will contain condor log
+
+Output     = read_$INT(n).out    
+# will contain the standard output
+
+Error      = read_$INT(n).error  
+# will contain the standard error
+
+#transfer_output_files = read_$INT(n).sam.gz, read_$INT(n).sai, read_$INT(n).md5
+
+############## condor control variables #############
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+
+Universe = docker
+docker_image = bwa_udocker
+
+#####################################################
+
+Queue 10
